@@ -12,7 +12,7 @@ from iprocessor import add_day_name_column, plot_data_dcr, add_date_name_column,
 # Sample parameters,
 contacts = 3.0
 transmission_prob = 0.1
-#total_population = 8000000
+total_population = 80000000
 reducing_transmission = 0.859
 exposed_period = 5  # this is the incubation period
 asymptomatic_period = 14
@@ -230,12 +230,7 @@ for name, value in zip(param_names, params_r):
 print(param_dict_r)
 
 
-# for dead
-param_dict_d = {}
-for name, value in zip(param_names, params_d):
-    param_dict_d[name] = value
-
-print(param_dict_d)
 
 
-print(f'length of the time t_fit_{len(t_fit)}, tmax{(tmax)}, time t {len(t)},time t_fit_{len(t_fit)}, recov_dead{len(recov_dead)}')
+
+print(f'length of the time t_fit_{len(t_fit)}, tmax{(tmax)}, time t {len(t)},time t_fit_{len(t_fit)}')
