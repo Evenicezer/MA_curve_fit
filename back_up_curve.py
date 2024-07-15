@@ -23,7 +23,7 @@ mortality_isolated = 0.002
 mortality_infected = 0.01
 
 # Sample initial conditions-------------------------------------------------------
-total_population = 82000000  # Total number of individuals 2020 may
+total_population = 82000000  # Total number of individuals
 E0 = 18633.333333333332
 A0 = 5064
 I0 = 136.89
@@ -47,20 +47,9 @@ df = add_date_name_column(df)
 df_observed = smooth_sundays_rolling_w7_l(df)
 # -----------------------------------------------------------------------------------------------------
 # Taking 'days' time column from dataframe
-t_fit_base = np.array(df_observed['days'])
-tmax = len(t_fit_base)
-#time
-t_fit_0 = np.zeros((tmax,2))
-t_fit_0[:,0] = t_fit_base
-t_fit_0[:,1] = 0
-#
-t_fit_1 = np.zeros((tmax,2))
-t_fit_1[:,0] = t_fit_base
-t_fit_1[:,1] = 1
-#
-t_fit = np.r_[t_fit_0,t_fit_1]
-len(t_fit)
-#
+t = np.array(df_observed['days'])
+tmax = len(t)
+
 
 def derivative_rhs(t, X, contacts, transmission_prob, total_population, reducing_transmission,
                    exposed_period, asymptomatic_period, infectious_period, isolated_period,
@@ -108,23 +97,43 @@ def objective(t, contacts, initial_conditions, transmission_prob, total_populati
     return temp  # [temp.y[5],temp.y[6]]
 
 
-#----------------------------------------------------------------------------------------------------------------
-# df_observed/ dataframe that have the cumulative as well as daily observed data(n_) for dead and recovered
-# here we will combine the recovered and dead in one matrix with 2d
-#['Date', 'Confirmed', 'Deaths', 'Recovered', 'n_confirmed', 'n_death','n_recovered', 'Infection_case', 'date_name', 'days', 'rolling_mean_r','rolling_mean_c', 'rolling_mean_d']
-data_recovered = np.zeros((df_observed['n_recovered'].size,2))
-data_recovered[:,0] = df_observed['n_recovered']
-#
-data_dead = np.ones((df_observed['n_death'].size,2))
-data_dead[:,0] = df_observed['n_death']
-recovered_dead = np.r_[data_recovered,data_dead]
+
+
+def parse_ivp_ode(return_from_objective):
+    """takes the function from the ode; and the index 5 and 6; represent the compartment
+    recovered and dead
+    return: np array of recovered and dead for dialy not commulative; so that we can fit"""
+    recovered, dead = return_from_objective.y[5], return_from_objective.y[6]
+    time_array = return_from_objective.t
+    recovered_difference = []
+    dead_difference = []
+    for t_index in range(1, len(time_array)):
+        # for recovered
+        recovered_t = recovered[t_index]
+        recovered_t_minus_1 = recovered[t_index - 1]
+        recovered_difference.append(recovered_t - recovered_t_minus_1)
+        # for dead
+        death_t = dead[t_index]
+        death_t_minus_1 = dead[t_index - 1]
+        dead_difference.append(death_t - death_t_minus_1)
+    return [np.array(recovered_difference), np.array(dead_difference)]
+
+
+return_from_objective = objective(t, contacts, initial_conditions, transmission_prob, total_population,
+                                  reducing_transmission,
+                                  exposed_period, asymptomatic_period, infectious_period, isolated_period,
+                                  prob_asymptomatic, prob_quarant_inf, test_asy, dev_symp, mortality_isolated,
+                                  mortality_infected)
+
+# print(f' here are the recovered and dead: {parse_ivp_ode(return_from_objective)}')
+array_recovered, array_dead = parse_ivp_ode(return_from_objective)
+# print(f'from recovered array{array_recovered}')
+# print(f'from dead array{array_dead}')
 
 
 
-#-----------------------------------------------------------------------------------------------------------------
-def objective_function_recoverd_dead(t,  contacts):
+def objective_function_recoverd(t,  contacts):
     #initial_conditions = [S0, E0, A0, I0, F0, R0, D0]
-    t = t_fit
     #contacts = 3.0
     transmission_prob = 0.3#0.3649
     total_population = 82000000
@@ -147,34 +156,94 @@ def objective_function_recoverd_dead(t,  contacts):
 
     recovered = temp.y[5]
     dead = temp.y[6]
+    daily_recovered_ = []
+    daily_death_ = []
+    for t_index in range(1, len(t)):
+        # for recovered
+        recovered_t = recovered[t_index]
+        recovered_t_minus_1 = recovered[t_index - 1]
+        daily_recovered_.append(recovered_t - recovered_t_minus_1)
+        # for dead
+        death_t = dead[t_index]
+        death_t_minus_1 = dead[t_index - 1]
+        daily_death_.append(death_t - death_t_minus_1)
+    return daily_recovered_
+def objective_function_dead(t,  isolated_period ):
+    #initial_conditions = [S0, E0, A0, I0, F0, R0, D0]
+    contacts = 2.0
+    transmission_prob = 0.3649
+    total_population = 84000000
+    reducing_transmission = 0.764
+    exposed_period = 5.2  #
+    asymptomatic_period = 7
+    infectious_period = 3.7
+    #isolated_period = 11  # 11,23
+    prob_asymptomatic = 0.2
+    prob_quarant_inf = 0.05
+    test_asy = 0.171
+    dev_symp = 0.125
+    mortality_isolated = 0.002
+    mortality_infected = 0.01
+    temp = seaifrd_model(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
+                         exposed_period, asymptomatic_period, infectious_period,
+                         isolated_period, prob_asymptomatic,
+                         prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected)
 
 
-    # returns recovered_dead 2d matrix together
-    data_recovered = np.zeros((len(recovered),2))
-    data_recovered[:,0] = recovered
-    #
-    data_dead = np.ones((len(dead),2))
-    data_dead[:,0] = dead
-    recovered_dead = np.r_[data_recovered,data_dead]
-    return recovered_dead
-
+    recovered = temp.y[5]
+    dead = temp.y[6]
+    daily_recovered_ = []
+    daily_death_ = []
+    for t_index in range(1, len(t)):
+        # for recovered
+        recovered_t = recovered[t_index]
+        recovered_t_minus_1 = recovered[t_index - 1]
+        daily_recovered_.append(recovered_t - recovered_t_minus_1)
+        # for dead
+        death_t = dead[t_index]
+        death_t_minus_1 = dead[t_index - 1]
+        daily_death_.append(death_t - death_t_minus_1)
+    return daily_death_
 
 t_end = df_observed['days'].iloc[-1]
+
 # Create a sequence from 0 to t_end
-t_fit = np.arange(0, 2*tmax, 1)
+t_fit = np.arange(0, tmax, 1)
 
-params_r_d, _ = curve_fit(objective_function_recoverd_dead, t_fit, recovered_dead)
 
+recov_dead = np.concatenate([array_recovered,array_dead])
+
+#print(f'length of the time t_fit_{len(t_fit_)}, tmax{(tmax)}, time t {len(t)},time t_fit_{len(t_fit)}, recov_dead{len(recov_dead)}')
+params_r, _ = curve_fit(objective_function_recoverd, t_fit, array_recovered)#,method='trf')  # since curve_fit is expecting target values ydata as a single array; and x=time
+#params_d, _ = curve_fit(objective_function_dead, t_fit, array_dead)#,method='trf')
 
 
 # assigning back
 # List of names corresponding to each value in params
-param_names_r_d = [ 'contacts']
+param_names_r = [ 'contacts']
 
-param_dict_r_d = {}
+param_dict_r = {}
 
-for name, value in zip(param_names_r_d, params_r_d):
-    param_dict_r_d[name] = value
+for name, value in zip(param_names_r, params_r):
+    param_dict_r[name] = value
 
-print(param_dict_r_d)
-print(f'length of the time t_fit_{len(t_fit)}, tmax{(tmax)}, time t {len(t_fit_base)},time t_fit_{len(t_fit)}, recovered_dead{len(recovered_dead)}')
+print(param_dict_r)
+#formatted_string = '\n'.join(f'{key} = {value}' for key, value in param_dict.items())
+#print(formatted_string)
+
+# for dead
+##param_names_d = [ 'isolated_period_dead']
+##param_dict_d = {}
+##for name, value in zip(param_names_d, params_d):
+##    param_dict_d[name] = value
+
+##print(param_dict_d)
+
+# for concantinated
+#param_dict_rd = {}
+#for name, value in zip(param_names, params_rd):
+#    param_dict_rd[name] = value
+
+#print(param_dict_rd)
+print(f'length of the time t_fit_{len(t_fit)}, tmax{(tmax)}, time t {len(t)},time t_fit_{len(t_fit)}, recov_dead{len(recov_dead)}')
+print(df_observed.columns)
