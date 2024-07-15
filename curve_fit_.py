@@ -48,19 +48,20 @@ df_observed = smooth_sundays_rolling_w7_l(df)
 # -----------------------------------------------------------------------------------------------------
 # Taking 'days' time column from dataframe
 t_fit_base = np.array(df_observed['days'])
-tmax = len(t_fit_base)
+tmax_base = len(t_fit_base)
 #time
-t_fit_0 = np.zeros((tmax,2))
+t_fit_0 = np.zeros((tmax_base,2))
 t_fit_0[:,0] = t_fit_base
 t_fit_0[:,1] = 0
 #
-t_fit_1 = np.zeros((tmax,2))
+t_fit_1 = np.zeros((tmax_base,2))
 t_fit_1[:,0] = t_fit_base
 t_fit_1[:,1] = 1
 #
 t_fit = np.r_[t_fit_0,t_fit_1]
 len(t_fit)
 #
+tmax = len(t_fit)
 
 def derivative_rhs(t, X, contacts, transmission_prob, total_population, reducing_transmission,
                    exposed_period, asymptomatic_period, infectious_period, isolated_period,
@@ -122,46 +123,39 @@ recovered_dead = np.r_[data_recovered,data_dead]
 
 
 #-----------------------------------------------------------------------------------------------------------------
-def objective_function_recoverd_dead(t,  contacts):
-    #initial_conditions = [S0, E0, A0, I0, F0, R0, D0]
-    t = t_fit
-    #contacts = 3.0
-    transmission_prob = 0.3#0.3649
+def objective_function_recoverd_dead(X, contacts):
+    t = X[:, 0]
+    mode = X[:, 1]
+
+    # Model parameters (could be passed as arguments or fixed here)
+    transmission_prob = 0.3
     total_population = 82000000
-    reducing_transmission = 0.55#0.764
-    exposed_period = 5.2  #
+    reducing_transmission = 0.55
+    exposed_period = 5.2
     asymptomatic_period = 7
     infectious_period = 3.7
-    isolated_period = 12#11  # 11,23
-    prob_asymptomatic = 0.34#0.2
-    prob_quarant_inf = 0.9303#0.05
-    test_asy = 0.271#0.171
+    isolated_period = 12
+    prob_asymptomatic = 0.34
+    prob_quarant_inf = 0.9303
+    test_asy = 0.271
     dev_symp = 0.125
     mortality_isolated = 0.02
     mortality_infected = 0.1
-    temp = seaifrd_model(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
-                         exposed_period, asymptomatic_period, infectious_period,
-                         isolated_period, prob_asymptomatic,
-                         prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected)
 
+    # Solve the model
+    solution = seaifrd_model(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
+                             exposed_period, asymptomatic_period, infectious_period, isolated_period,
+                             prob_asymptomatic, prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected)
 
-    recovered = temp.y[5]
-    dead = temp.y[6]
+    recovered = solution.y[5]
+    dead = solution.y[6]
 
-
-    # returns recovered_dead 2d matrix together
-    data_recovered = np.zeros((len(recovered),2))
-    data_recovered[:,0] = recovered
-    #
-    data_dead = np.ones((len(dead),2))
-    data_dead[:,0] = dead
-    recovered_dead = np.r_[data_recovered,data_dead]
-    return recovered_dead
+    return np.where(mode, recovered, dead)
 
 
 t_end = df_observed['days'].iloc[-1]
 # Create a sequence from 0 to t_end
-t_fit = np.arange(0, 2*tmax, 1)
+#t_fit = np.arange(0, 2*tmax, 1)
 
 params_r_d, _ = curve_fit(objective_function_recoverd_dead, t_fit, recovered_dead)
 
