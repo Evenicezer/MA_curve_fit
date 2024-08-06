@@ -113,10 +113,10 @@ def objective(t, contacts, initial_conditions, transmission_prob, total_populati
 # df_observed/ dataframe that have the cumulative as well as daily observed data(n_) for dead and recovered
 # here we will combine the recovered and dead in one matrix with 2d
 #['Date', 'Confirmed', 'Deaths', 'Recovered', 'n_confirmed', 'n_death','n_recovered', 'Infection_case', 'date_name', 'days', 'rolling_mean_r','rolling_mean_c', 'rolling_mean_d']
-data_recovered = np.zeros((df_observed['n_recovered'].size,2))
+data_recovered = np.ones((df_observed['n_recovered'].size,2))
 data_recovered[:,0] = df_observed['n_recovered']
 #
-data_dead = np.ones((df_observed['n_death'].size,2))
+data_dead = np.zeros((df_observed['n_death'].size,2))
 data_dead[:,0] = df_observed['n_death']
 recovered_dead = np.r_[data_recovered,data_dead]
 
