@@ -157,7 +157,7 @@ t_end = df_observed['days'].iloc[-1]
 # Create a sequence from 0 to t_end
 #t_fit = np.arange(0, 2*tmax, 1)
 
-params_r_d, _ = curve_fit(objective_function_recoverd_dead, t_fit, recovered_dead)
+params_r_d, _ = curve_fit(objective_function_recoverd_dead, t_fit, recovered_dead[:,0])
 
 
 
