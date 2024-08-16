@@ -59,11 +59,12 @@ t_fit_1[:,0] = t_fit_base
 t_fit_1[:,1] = 1
 #
 t_fit = np.r_[t_fit_0,t_fit_1]
+x= np.r_[t_fit_0,t_fit_1]
 len(t_fit)
 #
 tmax = len(t_fit)
 
-def derivative_rhs(t, X, contacts, transmission_prob, total_population, reducing_transmission,
+def derivative_rhs(x, X, contacts, transmission_prob, total_population, reducing_transmission,
                    exposed_period, asymptomatic_period, infectious_period, isolated_period,
                    prob_asymptomatic, prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected):
     S, E, A, I, F, R, D = X
@@ -81,27 +82,27 @@ def derivative_rhs(t, X, contacts, transmission_prob, total_population, reducing
 
 
 
-def seaifrd_model(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
+def seaifrd_model(x, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
                   exposed_period, asymptomatic_period, infectious_period, isolated_period,
                   prob_asymptomatic, prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected):
-    def derivative(t, initial_conditions):
-        return derivative_rhs(t, initial_conditions, contacts, transmission_prob, total_population,
+    def derivative(x, initial_conditions):
+        return derivative_rhs(x, initial_conditions, contacts, transmission_prob, total_population,
                               reducing_transmission,
                               exposed_period, asymptomatic_period, infectious_period,
                               isolated_period, prob_asymptomatic,
                               prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected)
 
-    solution = solve_ivp(derivative, [0, tmax], initial_conditions, t_eval=t, method='RK45')
+    solution = solve_ivp(derivative, [0, tmax], initial_conditions, method='RK45')#t_eval=x[:,0]
     print(solution)
     return solution  # .y.flatten()
 
 
 
 
-def objective(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
+def objective(x, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
               exposed_period, asymptomatic_period, infectious_period, isolated_period,
               prob_asymptomatic, prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected):
-    temp = seaifrd_model(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
+    temp = seaifrd_model(x, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
                          exposed_period, asymptomatic_period, infectious_period,
                          isolated_period, prob_asymptomatic,
                          prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected)
@@ -143,7 +144,7 @@ def objective_function_recoverd_dead(X, contacts):
     mortality_infected = 0.1
 
     # Solve the model
-    solution = seaifrd_model(t, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
+    solution = seaifrd_model(x, contacts, initial_conditions, transmission_prob, total_population, reducing_transmission,
                              exposed_period, asymptomatic_period, infectious_period, isolated_period,
                              prob_asymptomatic, prob_quarant_inf, test_asy, dev_symp, mortality_isolated, mortality_infected)
 
