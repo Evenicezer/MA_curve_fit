@@ -23,13 +23,13 @@ mortality_isolated = 0.002
 mortality_infected = 0.01
 
 # Sample initial conditions-------------------------------------------------------
-total_population = 82000000  # Total number of individuals 2020 may
-E0 = 18633.333333333332
-A0 = 5064
-I0 = 136.89
-F0 = 1451
-R0 = 2065
-D0 = 47
+total_population = 82_000_000  # Total number of individuals
+E0 = 2026.25
+A0 = 3798
+I0 = 376.4
+F0 = 2255
+R0 = 170204
+D0 = 9060
 S0 = total_population - E0 - A0 - I0 - F0 - R0 - D0
 initial_conditions = [S0, E0, A0, I0, F0, R0, D0]
 
